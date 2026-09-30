@@ -14,6 +14,7 @@ You write:  Grid.world_to_cell, Grid.cell_to_world, inflate
 """
 
 import math
+from collections import deque
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple
 
@@ -21,7 +22,6 @@ from sim.grid_values import UNKNOWN, FREE, OCCUPIED
 
 Cell = Tuple[int, int]        # (row, col)  — row first!
 Point = Tuple[float, float]   # (x, y) in world metres — x first!
-
 
 @dataclass
 class Grid:
@@ -107,7 +107,11 @@ class Grid:
         The result may lie outside the grid; callers use in_bounds().
         """
         # TODO: implement
-        raise NotImplementedError("Grid.world_to_cell")
+
+        row = math.floor((y - self.origin_y) / self.resolution)
+        col = math.floor((x - self.origin_x) / self.resolution)
+
+        return (row, col)
 
     def cell_to_world(self, row: int, col: int) -> Point:
         """
@@ -117,8 +121,11 @@ class Grid:
         search returns into something the rover can drive to.
         """
         # TODO: implement
-        raise NotImplementedError("Grid.cell_to_world")
 
+        x = (col+0.5) * self.resolution + self.origin_x
+        y = (row+0.5) * self.resolution + self.origin_y
+
+        return (x, y)
 
 def path_length_m(points_xy: Sequence[Point]) -> float:
     """Total length in metres of a polyline of (x, y) world points."""
@@ -146,4 +153,44 @@ def inflate(grid: Grid, radius_m: float) -> Grid:
         for radius >= one cell.
     """
     # TODO: implement
-    raise NotImplementedError("inflate")
+
+    # copy contents of original grid
+    marked_grid = grid.copy()
+
+    # The radius in grid cells 
+    converted_grid_radius = int(radius_m / grid.resolution)
+
+    # Find all obstacle positions
+    obstacle_positions = deque()
+    for row in range(grid.height):
+        for col in range(grid.width):
+            if grid.is_occupied(row, col):
+                obstacle_positions.append((row, col))
+
+    # Mark all cells within radius_m of each obstacle as occupied
+    while obstacle_positions:
+        row, col = obstacle_positions.popleft()
+
+        # top and bottom bounds
+        row_top_bound = row - converted_grid_radius
+        row_bot_bound = row + converted_grid_radius + 1
+
+        # right and left bounds
+        col_left_bound = col - converted_grid_radius
+        col_right_bound = col + converted_grid_radius + 1
+
+        # Mark cells within radius_m of obstacle
+        for r in range(row_top_bound, row_bot_bound):
+            for c in range(col_left_bound, col_right_bound):
+
+                if (
+                    marked_grid.in_bounds(r, c)
+                    and marked_grid.occupancy[marked_grid.index(r, c)] != OCCUPIED
+                ):
+                    marked_grid.occupancy[marked_grid.index(r, c)] = OCCUPIED;
+
+    return marked_grid
+
+        
+
+    
