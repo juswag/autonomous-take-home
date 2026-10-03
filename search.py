@@ -14,6 +14,10 @@ Movement rules (fixed, so the tests can check them)
 * Cells outside the grid don't exist.
 """
 
+import math
+import heapq
+from collections import deque, defaultdict
+
 from typing import List, Optional
 
 from grid_utils import Grid, Cell
@@ -31,8 +35,23 @@ def heuristic(a: Cell, b: Cell) -> float:
     fail it on an 8-connected grid.
     """
     # TODO: implement
-    raise NotImplementedError("heuristic")
 
+    cur_row, cur_col = a
+    goal_row, goal_col = b
+
+    delta_row = abs(goal_row - cur_row)
+    delta_col = abs(goal_col - cur_col)
+
+    # diagonals cost one horizontal one vertical and can only be as much as the min of the two
+    diagonals = min(delta_row, delta_col)
+
+    # calculate remaining horizontals after taking diagonals
+    horizontals = delta_col - diagonals
+
+    # calculate remaining horizontals after taking diagonals
+    verticals = delta_row - diagonals
+
+    return ( diagonals * math.sqrt(2) ) + horizontals + verticals
 
 def astar(grid: Grid, start: Cell, goal: Cell, unknown_is_free: bool = False) -> Optional[List[Cell]]:
     """
@@ -58,4 +77,82 @@ def astar(grid: Grid, start: Cell, goal: Cell, unknown_is_free: bool = False) ->
         structure makes "give me the cheapest open node" fast?
     """
     # TODO: implement
-    raise NotImplementedError("astar")
+
+    if not grid.in_bounds(*start) or not grid.in_bounds(*goal):
+        return None
+
+    if start == goal:
+        return [start]
+
+    # All valid movements
+    deltas = [(1,0),(-1,0),(0,-1),(0,1),(1,1),(-1,-1),(-1,1),(1,-1)]
+
+    # (priority, cur_cost, r, c)
+    heap: list[tuple[float, float, int, int]] = [(0.0, 0.0, *start)]
+
+    # save min cost exploration for each tile
+    prev_cost = [[float('inf') for _ in range(grid.width)] for _ in range(grid.height)]
+    prev_cost[start[0]][start[1]] = 0.0
+
+    # parent tracking, used for path reconstruction
+    parent = {}
+
+    while heap:
+
+        priority, cur_cost, r, c = heapq.heappop(heap)
+
+        # current tile is not optimal
+        if prev_cost[r][c] < cur_cost:
+            continue
+
+        if (r, c) == goal:
+            path = [goal]
+
+            # backward reconstruction hasn't reached the origin
+            while path[-1] != start:
+                path.append(parent[path[-1]])
+
+            path.reverse()
+            return path
+
+        # check all avaliable movements  
+        for dr, dc in deltas:
+            nr, nc = dr + r, dc + c
+
+            # if position is not in bounds, skip
+            if not grid.in_bounds(nr, nc): 
+                continue
+
+            occupancy = grid.get(nr, nc)
+
+            # the position is occupied, skip
+            if occupancy == 100:
+                continue
+
+            # the position is unknown, and unknown_is_free is false, skip
+            if occupancy == -1 and not unknown_is_free:
+                continue
+
+            dr = abs(nr - r)
+            dc = abs(nc - c)
+            cost = math.sqrt(2) if dr != 0 and dc != 0 else 1.0
+
+            # if move is diagonal, and it squeezes, skip
+            if dr != 0 and dc != 0:
+
+                # occupied, skip
+                if (grid.get(nr, c) == 100) or (grid.get(r, nc) == 100):
+                    continue
+
+                # unknown and unknown is not free, skip
+                if not unknown_is_free and (grid.get(nr, c) == -1 or grid.get(r, nc) == -1):
+                    continue
+
+            # if cur tile cost is less than previous exploration it's worth going down
+            if (cur_cost+cost) < prev_cost[nr][nc]:
+                parent[(nr, nc)] = (r, c)
+                prev_cost[nr][nc] = cur_cost+cost
+                priority = (cur_cost+cost) + heuristic((nr, nc), goal)
+                heapq.heappush(heap, (priority, cur_cost + cost, nr, nc))
+
+    return None
