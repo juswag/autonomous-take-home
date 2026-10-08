@@ -12,7 +12,7 @@ blocks for "is my current plan still good, and where along it am I?".
 from typing import Sequence
 
 from grid_utils import Grid, Point
-
+from sim.grid_values import OCCUPIED 
 
 def next_waypoint_index(path_xy: Sequence[Point], rover_xy: Point) -> int:
     """
@@ -25,8 +25,27 @@ def next_waypoint_index(path_xy: Sequence[Point], rover_xy: Point) -> int:
     Ties: return the lower index. `path_xy` is never empty when this is called.
     """
     # TODO: implement
-    raise NotImplementedError("next_waypoint_index")
+    # raise NotImplementedError("next_waypoint_index")
 
+    # closest can be defined by the delta of x, y -> lower -> closer
+
+    rover_x, rover_y = rover_xy
+
+    # (index, distance)
+    closest_waypoint = (0, float('inf'))
+
+    for i in range(len(path_xy)):
+
+        tile_x, tile_y = path_xy[i]
+
+        # euclidean distance
+        waypoint_distance = ((rover_x - tile_x)**2 + (rover_y - tile_y)**2)**0.5
+
+        # new tile is closer, replace it with prev closest
+        if closest_waypoint[1] > waypoint_distance:
+            closest_waypoint = (i, waypoint_distance)
+
+    return closest_waypoint[0]
 
 def path_is_valid(grid: Grid, path_xy: Sequence[Point], start_index: int = 0) -> bool:
     """
@@ -46,4 +65,22 @@ def path_is_valid(grid: Grid, path_xy: Sequence[Point], start_index: int = 0) ->
     keep their meaning when the grid changes.
     """
     # TODO: implement
-    raise NotImplementedError("path_is_valid")
+
+    if not path_xy:
+        return False
+
+    for i in range(start_index, len(path_xy)):
+
+        x, y = path_xy[i]
+        row, col = grid.world_to_cell(x, y)
+
+        # not in bounds  
+        if not grid.in_bounds(row, col):
+            return False
+
+        # blocked
+        if grid.get(row, col) == OCCUPIED:
+            return False
+
+
+    return True
