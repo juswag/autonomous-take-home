@@ -32,7 +32,6 @@ from rclpy_lite.node import Node
 from rclpy_lite.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 
 # Message types provided by the simulator
-from sim.grid_values import OCCUPIED
 from sim.messages import GridSnapshot, make_path_msg
 
 # Standard ROS message type (mirrored by the shim)
@@ -154,7 +153,7 @@ class PlannerNode(Node):
                 self.replan_count += 1 
                 self.last_replan_stamp = msg.header.stamp
 
-            # save the new grid  
+            # Save the new grid  
             self.current_grid = grid.copy()
 
             self.path_xy = new_path
