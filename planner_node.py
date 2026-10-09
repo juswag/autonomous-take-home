@@ -132,7 +132,7 @@ class PlannerNode(Node):
         and not otherwise. The scoreboard tells you how you did.
         """
 
-        # Build grid and inflate obstacle to account for radius of rover 
+        # build grid and inflate obstacle to account for radius of rover 
         grid = inflate(Grid.from_msg(msg), msg.robot_radius_m)
 
         # Rover and goal position from incoming message
