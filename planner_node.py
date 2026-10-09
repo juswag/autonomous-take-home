@@ -32,6 +32,7 @@ from rclpy_lite.node import Node
 from rclpy_lite.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 
 # Message types provided by the simulator
+from sim.grid_values import OCCUPIED
 from sim.messages import GridSnapshot, make_path_msg
 
 # Standard ROS message type (mirrored by the shim)
@@ -143,20 +144,23 @@ class PlannerNode(Node):
 
         if replan == True:
 
+            new_path = self.plan(grid, rover_xy, goal_xy)
+
             # increment counters 
-            self.replan_count += 1 if self.current_grid else 0       
-            self.plan_count += 1                      
+            self.plan_count += 1                     
+
+            # we should only increment replan when our previous plan fails
+            if self.path_xy and new_path:
+                self.replan_count += 1 
+                self.last_replan_stamp = msg.header.stamp
 
             # save the new grid  
             self.current_grid = grid.copy()
 
-            self.path_xy = self.plan(grid, rover_xy, goal_xy)
+            self.path_xy = new_path
 
             # send path downstream to those who are subscribed to '/planned_path' 
             self.publish_path(self.path_xy, msg.header.stamp)
-
-            # save stamp 
-            self.last_replan_stamp = msg.header.stamp
 
         self.print_status(msg.header.stamp)
 
@@ -188,6 +192,7 @@ class PlannerNode(Node):
                 ):
 
                 return (True, "Last search found no route.")
+            return (False, "No route, waiting for the grid to change.")
 
         index = next_waypoint_index(self.path_xy, rover_xy)
 
