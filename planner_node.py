@@ -72,12 +72,31 @@ class PlannerNode(Node):
         #     GridSnapshot, "/grid_feed", self.on_grid, ???
         # )
 
+        # Create the QOS profile for '/grid_feed' channel 
+        grid_sub_qos = QoSProfile(
+                reliability=ReliabilityPolicy.BEST_EFFORT,
+                durability=DurabilityPolicy.VOLATILE,
+                depth=1,
+        )
+
+        self.grid_sub = self.create_subscription(
+                GridSnapshot,
+                "/grid_feed",
+                self.on_grid,
+                grid_sub_qos,
+        )
+
         # ------------------------------------------------------------------
         # Publisher
         # ------------------------------------------------------------------
         # TODO: Create a publisher for /planned_path (message type: Path).
         #
-        # self.path_pub = self.create_publisher(Path, "/planned_path", 10)
+
+        self.path_pub = self.create_publisher(
+                Path, 
+                "/planned_path", 
+                10,
+        )
 
         # ------------------------------------------------------------------
         # State — add whatever you need
@@ -86,6 +105,11 @@ class PlannerNode(Node):
         self.plan_count = 0          # how many plans you have published (initial one included)
         self.replan_count = 0        # how many of those replaced an existing plan
         self.last_replan_stamp = None  # sim time of the most recent replan, or None
+
+        self.current_grid = None # the current current grid, useful for comparsions when grid updates
+
+        self._last_status_stamp = None
+        self._last_status_plan_count = None
 
     # -----------------------------------------------------------------------
     # The callback: runs once per tick
@@ -107,8 +131,34 @@ class PlannerNode(Node):
         Step 3 is the heart of the task: replan when the plan is invalidated,
         and not otherwise. The scoreboard tells you how you did.
         """
-        # TODO: implement
-        raise NotImplementedError("PlannerNode.on_grid")
+
+        # Build grid and inflate obstacle to account for radius of rover 
+        grid = inflate(Grid.from_msg(msg), msg.robot_radius_m)
+
+        # Rover and goal position from incoming message
+        rover_xy = (msg.rover_x, msg.rover_y)
+        goal_xy = (msg.goal_x, msg.goal_y)
+
+        replan, status = self.needs_replan(grid, rover_xy)
+
+        if replan == True:
+
+            # increment counters 
+            self.replan_count += 1 if self.current_grid else 0       
+            self.plan_count += 1                      
+
+            # save the new grid  
+            self.current_grid = grid.copy()
+
+            self.path_xy = self.plan(grid, rover_xy, goal_xy)
+
+            # send path downstream to those who are subscribed to '/planned_path' 
+            self.publish_path(self.path_xy, msg.header.stamp)
+
+            # save stamp 
+            self.last_replan_stamp = msg.header.stamp
+
+        self.print_status(msg.header.stamp)
 
     def needs_replan(self, grid: Grid, rover_xy) -> tuple:
         """
@@ -126,8 +176,26 @@ class PlannerNode(Node):
         Return a short reason like "path blocked ahead" — it goes in your monitoring
         output and makes debugging a hundred times easier.
         """
-        # TODO: implement
-        raise NotImplementedError("PlannerNode.needs_replan")
+        # You have never planned   
+        if self.path_xy is None:
+            return (True, "Nothing was planned.")
+
+        # there were changes to the grid, which may open a new valid route 
+        if self.path_xy == []:
+            if ( 
+                self.current_grid and 
+                self.current_grid.occupancy != grid.occupancy  
+                ):
+
+                return (True, "Last search found no route.")
+
+        index = next_waypoint_index(self.path_xy, rover_xy)
+
+        # checks two things: if plan is no longer safe, and if a change impacts the current path
+        if not path_is_valid(grid, self.path_xy, index):
+            return (True, "The path is blocked ahead.")
+
+        return (False, "Current path is good")
 
     def plan(self, grid: Grid, rover_xy, goal_xy):
         """
@@ -136,8 +204,22 @@ class PlannerNode(Node):
 
         Convert world -> cell, call astar, convert the cells back to world points.
         """
-        # TODO: implement
-        raise NotImplementedError("PlannerNode.plan")
+
+        start = grid.world_to_cell(rover_xy[0], rover_xy[1])
+        goal = grid.world_to_cell(goal_xy[0], goal_xy[1])
+
+        path = astar(grid, start, goal, unknown_is_free=True)
+
+        if not path:
+            return []
+
+        res = []
+        for position in path:
+            row, col = position
+            world_cord = grid.cell_to_world(row, col)
+            res.append(world_cord)
+
+        return res
 
     def publish_path(self, points_xy, stamp: float) -> None:
         """Publish a list of (x, y) world points as nav_msgs/Path. (provided)"""
@@ -160,5 +242,24 @@ class PlannerNode(Node):
         `stamp` is SIMULATION time in seconds (msg.header.stamp). The sim can run
         much faster than real time, so time.time() would give nonsense here.
         """
-        # TODO: implement
-        raise NotImplementedError("PlannerNode.print_status")
+        # Print immediately after a search, otherwise once per simulated second.
+        plan_changed = self.plan_count != self._last_status_plan_count
+        if (
+            not plan_changed
+            and self._last_status_stamp is not None
+            and stamp - self._last_status_stamp < 1.0 - 1e-9
+        ):
+            return
+
+        length_m = path_length_m(self.path_xy or [])
+        if self.last_replan_stamp is None:
+            since_replan = "never"
+        else:
+            since_replan = f"{stamp - self.last_replan_stamp:.1f} s"
+
+        print(
+            f"[planner t={stamp:.1f} s] path length={length_m:.2f} m | "
+            f"replans={self.replan_count} | time since last replan={since_replan}"
+        )
+        self._last_status_stamp = stamp
+        self._last_status_plan_count = self.plan_count
