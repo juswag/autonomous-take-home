@@ -21,7 +21,7 @@ ROS 2 lets you configure delivery guarantees per topic (e.g., `RELIABLE` vs `BES
 1. `RELIABLE` guarantees that every message reaches its destination. The publisher keeps re-sending until the receiver acknowledges. If a packet gets lost, the sender resends it.
 2. `BEST_EFFORT` sends data without checking it arrives. The publisher transmits once and moves on, spending no extra time or network resources tracking delivery.
 
-A publisher and subscriber on the same topic must have *compatible* settings, or they silently won't connect. The rule: the subscriber may not ask for more than the publisher offers (a `BEST_EFFORT` publisher cannot serve a `RELIABLE` subscriber). Real ROS 2 prints a warning when this happens, and so does our simulator. Read your terminal output.
+A publisher and subscriber on the same topic must have _compatible_ settings, or they silently won't connect. The rule: the subscriber may not ask for more than the publisher offers (a `BEST_EFFORT` publisher cannot serve a `RELIABLE` subscriber). Real ROS 2 prints a warning when this happens, and so does our simulator. Read your terminal output.
 
 ### Occupancy Grids
 
@@ -29,27 +29,28 @@ An occupancy grid represents the environment as a 2D grid of cells, where each c
 
 A grid is just a flat list of numbers plus a few facts that say how to read it: how wide a cell is (`resolution`), and where in the world the grid sits (`origin`). Turning a world position into a cell, and a cell back into a world position, sounds trivial and is where a surprising number of bugs live. Read the `GridSnapshot` docstring in `sim/messages.py` before you write any code.
 
-### Path Planning — A* (what you'll implement)
+### Path Planning — A\* (what you'll implement)
 
-A* is a graph search algorithm that finds the shortest path between two points by exploring the most promising paths first, using a cost function that combines "distance traveled so far" with "estimated distance remaining" (a *heuristic*, an optimistic guess at the distance to the goal). Whether you get the *shortest* path depends entirely on that heuristic being optimistic. That is worth understanding, not just copying.
+A* is a graph search algorithm that finds the shortest path between two points by exploring the most promising paths first, using a cost function that combines "distance traveled so far" with "estimated distance remaining" (a *heuristic*, an optimistic guess at the distance to the goal). Whether you get the *shortest\* path depends entirely on that heuristic being optimistic. That is worth understanding, not just copying.
 
-**Theta\*** (a stretch goal, and what we actually use on the rover) is a variant of A* that allows "any-angle" paths instead of only grid-aligned moves, producing smoother, more realistic paths — but it's meaningfully harder to implement, hence stretch-only.
+**Theta\*** (a stretch goal, and what we actually use on the rover) is a variant of A\* that allows "any-angle" paths instead of only grid-aligned moves, producing smoother, more realistic paths — but it's meaningfully harder to implement, hence stretch-only.
 
 ### The rover has a size
 
-A path planner treats the rover as a dimensionless point moving through cell centres. The real rover is a disc. A path that skims the edge of a boulder is fine for a point and impossible for a disc. The standard fix is to *inflate* every obstacle by the rover's radius so that a point moving through the inflated map is safe for the real disc. The outer edge of the arena is a wall in the same sense: the rover's body cannot hang over it or scrape along it, so hugging the outermost row of cells is unsafe. Nothing marks it in the grid for you.
+A path planner treats the rover as a dimensionless point moving through cell centres. The real rover is a disc. A path that skims the edge of a boulder is fine for a point and impossible for a disc. The standard fix is to _inflate_ every obstacle by the rover's radius so that a point moving through the inflated map is safe for the real disc. The outer edge of the arena is a wall in the same sense: the rover's body cannot hang over it or scrape along it, so hugging the outermost row of cells is unsafe. Nothing marks it in the grid for you.
 
 ### Replanning
 
-Because the rover's view of the world changes as it moves (new obstacles appear, unknown ground turns out to have boulders on it), a real planner can't just plan once at the start — it has to detect when its current path is no longer valid and replan. This is the core of what makes this task different from a textbook static-grid A* exercise, and it's the core of what makes our real autonomy stack hard. There is a second half to it that is just as important: **not** replanning when the path is still fine. Planning costs compute, and a path that changes every tick makes the rover dither.
+Because the rover's view of the world changes as it moves (new obstacles appear, unknown ground turns out to have boulders on it), a real planner can't just plan once at the start — it has to detect when its current path is no longer valid and replan. This is the core of what makes this task different from a textbook static-grid A\* exercise, and it's the core of what makes our real autonomy stack hard. There is a second half to it that is just as important: **not** replanning when the path is still fine. Planning costs compute, and a path that changes every tick makes the rover dither.
 
 ### How Yonder actually uses this
 
 Our rover builds a rolling 30m×30m occupancy grid from stereo camera depth data, where each cell has a confidence value that degrades over time/distance from the camera's current view. We run Theta\* with a pure pursuit controller to plan smooth paths around obstacles while continuously remapping as the rover moves and its view updates. This task is a simplified version of that real pipeline.
 
 **Resources:**
+
 - [ROS 2 Publisher/Subscriber tutorial](https://docs.ros.org/en/humble/Tutorials/Beginner-Client-Libraries/Writing-A-Simple-Py-Publisher-And-Subscriber.html)
-- [A* Pathfinding for Beginners (Red Blob Games)](https://www.redblobgames.com/pathfinding/a-star/introduction.html)
+- [A\* Pathfinding for Beginners (Red Blob Games)](https://www.redblobgames.com/pathfinding/a-star/introduction.html)
 - [ROS 2 QoS docs](https://docs.ros.org/en/humble/Concepts/Intermediate/About-Quality-of-Service-Settings.html)
 
 ---
@@ -96,9 +97,9 @@ METHODOLOGY.md         Template for how to run your work and your thought proces
 
 **`sim/grid_feed_publisher.py`** — how the grid is built each tick, and the QoS it publishes with (this is the thing most likely to silently break your node).
 
-**`sim/rover.py`** — what the rover does with the path you publish. Note what an *empty* path means.
+**`sim/rover.py`** — what the rover does with the path you publish. Note what an _empty_ path means.
 
-**`sim/scoring.py`** — exactly how your run is judged: what counts as a plan, a replan, and a *needless* replan.
+**`sim/scoring.py`** — exactly how your run is judged: what counts as a plan, a replan, and a _needless_ replan.
 
 **`sim/rclpy_lite/`** — you don't need to understand this in depth. It's a lightweight shim with the same API as real rclpy (Node, Publisher, Subscriber, QoS). We name it `rclpy_lite` rather than `rclpy` to avoid ambiguity if you have ROS installed. To port your code to a real ROS 2 system, swap `rclpy_lite` → `rclpy` in your imports.
 
@@ -111,7 +112,6 @@ You need Python 3.10 or newer (check with `python3 --version`, or `python --vers
    **Option A: directly in your terminal** (no virtual environment). The simplest route. Type `python3` wherever this README says `python` on macOS and Linux. **On Windows the command is usually `python` (or `py`); if typing `python` opens the Microsoft Store, use `py`.**
 
    Part 1 needs **nothing installed**. Only the pictures (`--visualize`, `--save-png`) need numpy and matplotlib, so install them if you want pictures:
-
    - **Ubuntu / WSL:** install the system packages. (A plain `pip install` is refused on recent Ubuntu with `error: externally-managed-environment`.)
 
      ```bash
@@ -164,27 +164,27 @@ You need Python 3.10 or newer (check with `python3 --version`, or `python --vers
 
    > **No display?** `--visualize` needs one (Windows 11 has one built into WSL through WSLg, and you may also need `sudo apt install python3-tk`). Use `--save-png out.png` instead to write a picture of the final state of a run.
 
-| Command | What it does |
-| --- | --- |
-| `python sim/launch.py` | Default scenario (`boulders`), headless, prints a summary |
-| `python sim/launch.py --scenario NAME` | Pick a world: `open`, `boulders`, `wall`, `popup`, `goal-blocked`, `random` |
-| `python sim/launch.py --scenario random --seed 7` | A generated world; every seed is a different one |
-| `python sim/launch.py --all` | Every scenario plus random seeds 1–3, as one table |
-| `python sim/launch.py --visualize` | Live matplotlib window (`--speed 3` for 3× faster) |
-| `python sim/launch.py --save-png out.png` | Run, then save a picture of the final state |
-| `python sim/launch.py --noise` | Part 2: noisy sensor (see Part 2A) |
-| `python sim/launch.py --no-node` | Simulator only, no planner |
+| Command                                           | What it does                                                                |
+| ------------------------------------------------- | --------------------------------------------------------------------------- |
+| `python sim/launch.py`                            | Default scenario (`boulders`), headless, prints a summary                   |
+| `python sim/launch.py --scenario NAME`            | Pick a world: `open`, `boulders`, `wall`, `popup`, `goal-blocked`, `random` |
+| `python sim/launch.py --scenario random --seed 7` | A generated world; every seed is a different one                            |
+| `python sim/launch.py --all`                      | Every scenario plus random seeds 1–3, as one table                          |
+| `python sim/launch.py --visualize`                | Live matplotlib window (`--speed 3` for 3× faster)                          |
+| `python sim/launch.py --save-png out.png`         | Run, then save a picture of the final state                                 |
+| `python sim/launch.py --noise`                    | Part 2: noisy sensor (see Part 2A)                                          |
+| `python sim/launch.py --no-node`                  | Simulator only, no planner                                                  |
 
 ### The feeds
 
-| Topic | Rate | Message | QoS |
-| --- | --- | --- | --- |
-| `/grid_feed` (you subscribe) | 5 Hz of *simulated* time | `GridSnapshot` (grid + rover position + goal) | check the source |
-| `/planned_path` (you publish) | when your plan changes | `nav_msgs/Path` (waypoints in world metres) | your choice |
+| Topic                         | Rate                     | Message                                       | QoS              |
+| ----------------------------- | ------------------------ | --------------------------------------------- | ---------------- |
+| `/grid_feed` (you subscribe)  | 5 Hz of _simulated_ time | `GridSnapshot` (grid + rover position + goal) | check the source |
+| `/planned_path` (you publish) | when your plan changes   | `nav_msgs/Path` (waypoints in world metres)   | your choice      |
 
 Some numbers worth knowing (all also in the messages): the arena is 30 m × 30 m, cells are 0.5 m, the rover sees everything within 8 m of itself, drives at 1.5 m/s, and has a planning radius of 0.5 m. The start and goal are the same in every scenario.
 
-**Simulated time.** One tick is 0.2 s of *simulated* time. The simulator does not wait for the wall clock, so a whole run takes a fraction of a second (`--visualize` slows it to real time so you can watch). Any "time" in your monitoring output must be simulated time (`msg.header.stamp`), not `time.time()`.
+**Simulated time.** One tick is 0.2 s of _simulated_ time. The simulator does not wait for the wall clock, so a whole run takes a fraction of a second (`--visualize` slows it to real time so you can watch). Any "time" in your monitoring output must be simulated time (`msg.header.stamp`), not `time.time()`.
 
 ### What the grid tells you
 
@@ -199,7 +199,7 @@ Each `GridSnapshot` is everything the rover knows at that moment:
 >
 > Confidence-based planning is **Part 2**, which turns on a noisy sensor (`--noise`) where confidence starts to mean something.
 
-What is *not* perfect in Part 1 is the rover's **knowledge**: it only sees within 8 m, so most of the map starts out unknown, and things can change after it last looked.
+What is _not_ perfect in Part 1 is the rover's **knowledge**: it only sees within 8 m, so most of the map starts out unknown, and things can change after it last looked.
 
 ---
 
@@ -217,17 +217,17 @@ Complete `planner_node.py` (and the three pure-Python files it uses) so that it:
 
 Each step has a check that tells you it's right before you move on, and ends with a **commit** (see "Commit as you go" below).
 
-| Step | What to do | How you know it's done | Commit message |
-| --- | --- | --- | --- |
-| 1 | Read `sim/messages.py`. Run `python sim/launch.py --scenario open --no-node` and watch the rover sit still. | The `!!` line at the bottom of the summary says why. | *(nothing to commit yet)* |
-| 2 | `grid_utils.py`: `world_to_cell`, `cell_to_world`, `inflate`. | `python -m unittest tests.test_grid_utils` | `step 2: grid_utils` |
-| 3 | `search.py`: `heuristic`, `astar`. | `python -m unittest tests.test_search` | `step 3: search` |
-| 4 | `replan.py`: `next_waypoint_index`, `path_is_valid`. | `python -m unittest tests.test_replan` | `step 4: replan helpers` |
-| 5 | `planner_node.py`: subscribe, publish, plan once. Get the rover across the `open` scenario. | `--scenario open` reaches the goal, 1 plan, 0 replans. | `step 5: plan once` |
-| 6 | Add the replan logic. Run `boulders`, `wall`. | Reaches the goal, 0 blocked ticks. | `step 6: replanning` |
-| 7 | `popup` and `goal-blocked`. | Reaches the goal, 0 blocked ticks, 0 needless replans. | `step 7: popup and goal-blocked` |
-| 8 | `--all`, then some `--scenario random --seed N` you haven't tried. | Every row reaches the goal. | `step 8: random seeds` |
-| 9 | Write your write-up (in this README), finish `METHODOLOGY.md` and `AI_LOG.md`. | Every question in the write-up has an answer with numbers from your own runs. | `step 9: write-up, methodology and AI log` |
+| Step | What to do                                                                                                  | How you know it's done                                                        | Commit message                             |
+| ---- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------ |
+| 1    | Read `sim/messages.py`. Run `python sim/launch.py --scenario open --no-node` and watch the rover sit still. | The `!!` line at the bottom of the summary says why.                          | _(nothing to commit yet)_                  |
+| 2    | `grid_utils.py`: `world_to_cell`, `cell_to_world`, `inflate`.                                               | `python -m unittest tests.test_grid_utils`                                    | `step 2: grid_utils`                       |
+| 3    | `search.py`: `heuristic`, `astar`.                                                                          | `python -m unittest tests.test_search`                                        | `step 3: search`                           |
+| 4    | `replan.py`: `next_waypoint_index`, `path_is_valid`.                                                        | `python -m unittest tests.test_replan`                                        | `step 4: replan helpers`                   |
+| 5    | `planner_node.py`: subscribe, publish, plan once. Get the rover across the `open` scenario.                 | `--scenario open` reaches the goal, 1 plan, 0 replans.                        | `step 5: plan once`                        |
+| 6    | Add the replan logic. Run `boulders`, `wall`.                                                               | Reaches the goal, 0 blocked ticks.                                            | `step 6: replanning`                       |
+| 7    | `popup` and `goal-blocked`.                                                                                 | Reaches the goal, 0 blocked ticks, 0 needless replans.                        | `step 7: popup and goal-blocked`           |
+| 8    | `--all`, then some `--scenario random --seed N` you haven't tried.                                          | Every row reaches the goal.                                                   | `step 8: random seeds`                     |
+| 9    | Write your write-up (in this README), finish `METHODOLOGY.md` and `AI_LOG.md`.                              | Every question in the write-up has an answer with numbers from your own runs. | `step 9: write-up, methodology and AI log` |
 
 Use `--visualize` (or `--save-png`) constantly. You will learn more from watching one replan happen than from re-reading your code.
 
@@ -272,7 +272,7 @@ The summary at the end of a run is your scoreboard:
 
 - **Result** — did the rover get there.
 - **Blocked ticks** — the number of ticks the rover had to emergency-stop because your path led into a real obstacle. This should be **0** everywhere.
-- **Replans / needless replans** — a replan is *needless* if the path it replaced was still fine according to the grid you were given (`sim/scoring.py` defines exactly what that means). This should be **0** everywhere. Note that more replans is not the same as needless: a world full of boulders legitimately needs many.
+- **Replans / needless replans** — a replan is _needless_ if the path it replaced was still fine according to the grid you were given (`sim/scoring.py` defines exactly what that means). This should be **0** everywhere. Note that more replans is not the same as needless: a world full of boulders legitimately needs many.
 
 We will also run your planner on worlds you haven't seen (`--scenario random` with other seeds), so don't tune it to the visible scenarios.
 
@@ -297,14 +297,14 @@ Run `python sim/launch.py --noise`. Same worlds, same rover, but the sensor is n
 - Confidence falls with distance: a cell right next to the rover is ≈ 1.0, one at the edge of sensor range ≈ 0.25.
 - **Low confidence means the reading is more likely to be wrong**: phantom obstacles that aren't there, and real ones that are missed. A wrong reading usually lasts a single tick.
 - A cell that isn't currently being observed loses confidence over time. There are also short sensor **dropouts** where nothing is observed at all.
-- `confidence_threshold` (0.6) is the value below which we call a reading *unreliable*.
+- `confidence_threshold` (0.6) is the value below which we call a reading _unreliable_.
 
 **Step 1 — observe.** Run your Part 1 planner, unmodified, with `--noise`. What happens to the replan count? Where do the replans come from? (The summary now has a **Phantom replans** line: replans triggered by something in your grid that wasn't really there.) Look at `--visualize`: low-confidence cells fade toward gray.
 
 **Step 2 — fix it.** Use confidence so that you stop chasing phantoms without becoming blind to real obstacles. There is no single right answer; questions worth answering in your write-up:
 
 - Which cells should count as blocking: everything marked occupied? Only cells above the threshold? What about an obstacle you saw clearly a moment ago whose confidence has since decayed. Has it gone away?
-- Should a change in confidence, with no change in occupancy, ever trigger a replan? What could a replan achieve if *every* cell has lost confidence (a dropout)?
+- Should a change in confidence, with no change in occupancy, ever trigger a replan? What could a replan achieve if _every_ cell has lost confidence (a dropout)?
 - Unknown cells also have confidence 0. Are they the same thing as low-confidence cells?
 
 We grade the outcome (reached the goal, 0 blocked ticks, few phantom and needless replans), not one specific technique.
@@ -348,15 +348,15 @@ The "Your write-up" section of this README answers specific questions with numbe
 
 ## Rubric
 
-| Criterion | What we're scoring |
-| --- | --- |
-| **Correctness** | Planner finds valid paths, reaches the goal in every scenario (including unseen seeds) with 0 blocked ticks; pub/sub actually connects |
-| **Replanning behavior** | Correctly detects invalidated paths and replans; doesn't replan needlessly every tick |
-| **Design judgment** | Evidence of intentional choices beyond the minimum ask (heuristic choice, replan-trigger design, code structure) |
-| **Handling ambiguity** | How did they resolve underspecified parts of the task? Did they make a reasonable call and explain it? |
+| Criterion                          | What we're scoring                                                                                                                                       |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Correctness**                    | Planner finds valid paths, reaches the goal in every scenario (including unseen seeds) with 0 blocked ticks; pub/sub actually connects                   |
+| **Replanning behavior**            | Correctly detects invalidated paths and replans; doesn't replan needlessly every tick                                                                    |
+| **Design judgment**                | Evidence of intentional choices beyond the minimum ask (heuristic choice, replan-trigger design, code structure)                                         |
+| **Handling ambiguity**             | How did they resolve underspecified parts of the task? Did they make a reasonable call and explain it?                                                   |
 | **Understanding, not just output** | Can they explain their heuristic, their replan logic, their tradeoffs? Does the write-up show real comprehension, backed by numbers from their own runs? |
-| **AI verification** | Evidence they tested/verified AI-assisted code rather than taking it on faith (from log + code quality + tests they added + commit history) |
-| **Stretch engagement** (bonus) | Attempted or completed any stretch goal — even partial attempts count positively |
+| **AI verification**                | Evidence they tested/verified AI-assisted code rather than taking it on faith (from log + code quality + tests they added + commit history)              |
+| **Stretch engagement** (bonus)     | Attempted or completed any stretch goal — even partial attempts count positively                                                                         |
 
 We don't expect a perfect implementation. Those who show genuine effort and learning are the ones who will have a leg up!
 
@@ -364,18 +364,72 @@ We don't expect a perfect implementation. Those who show genuine effort and lear
 
 ## Your write-up
 
-*Candidates: replace this section with your own short write-up. Keep it to what a teammate would need to trust your implementation. Numbers from your own runs beat adjectives.*
+**Prediction**
 
-- **Prediction.** Before running `boulders`: how many replans did you expect, and why? What did you get?
-- **Heuristic.** Which one, and why is it safe for an 8-connected grid? What goes wrong with one that overestimates? (Try it. What did you see?)
-- **Replan trigger.** Exactly what makes you replan? What deliberately does *not*? Paste your `python sim/launch.py --all` table.
-- **Unknown cells.** How does your planner treat them, and why? What happens on the very first tick under the other choice?
-- **Rover size.** How do you account for it? What happens to the run if you don't?
-- **No route.** What do you publish when there is no path, and what would go wrong if you published nothing?
-- **Time.** Which clock does your monitoring output use, and why?
-- **Ambiguity.** What did the task leave underspecified, and what call did you make?
-- **Testing.** What did you check beyond the provided tests? Which scenario or picture revealed a bug of yours?
-- **Stretch goals.** Which did you attempt, and how far did you get? (For Part 2A: what changed between your Part 1 planner and your final one, in numbers?)
+The easy answer is that the replans depend on the amount of obstacles that are detected by the rover. However, it’s sort of hard to make an accurate prediction prior to the run because the replans trigger when newly detected obstacle cells block the remaining path. In which case, it runs the replan multiple times over the area of the obstacle. This is because as the rover progresses after replanning it may encounter another part of the obstacle which may require another set of replans. I did not record a numerical prediction before the run. In boulders, the rover reached the goal with 8 replans, 0 blocked ticks, and 0 needless replans.
+
+**Heuristic**
+
+I chose an octile heuristic because it matches the permitted movements of the rover in this simulation. It’s safe for an 8-connected grid because it gives the shortest cost on an empty grid, accounting for straight moves costing 1 and diagonal moves costing sqrt(2). Obstacles can only increase that cost. For example, a Manhattan heuristic counts a diagonal displacement as two straight moves, estimating 2 when one diagonal move costs about 1.41. The reason overestimating is harmful in path finding (A\*) is because it may cause us to rank an optimal route too poorly and return a longer path. In order to avoid this, I chose a heuristic that accounts for the permitted movements and their costs without overestimating the true remaining cost.
+
+To test this, I temporarily replaced octile with Manhattan on a generated 10×10 test grid with a 20% obstacle probability, using seed 13. Octile found a path with a movement cost of 15.0711, while Manhattan returned 15.6569, approximately 3.9% higher.
+
+**Replan Trigger**
+
+I create the initial plan on the first grid update. After that, I find the waypoint closest to the rover and check the path from that waypoint to the goal. I replan if any checked waypoint is occupied in the inflated grid or is outside the grid. Inflation accounts for the rover’s size. If a search finds no route, I publish an empty path to stop the rover. I retry only when the occupancy grid changes from the last search. I deliberately keep a valid path when obstacles change behind the rover or away from the remaining path. Reaching a waypoint or receiving another grid update does not itself trigger a replan. I also avoid repeating a failed search when the map has not changed.
+
+In popup, the planner replanned twice, at 3.4 s and 19.4 s, when obstacles appeared ahead. The obstacle that appeared behind the rover at 16.2 s did not trigger a replan. In goal-blocked, the planner published an empty path at 20.8 s, waited 8 simulated seconds, and published a recovery path at 28.8 s. Both runs reached the goal with 0 blocked ticks and 0 needless replans.
+
+```
+scenario      result           ticks  blocked  plans  replans  needless
+-----------------------------------------------------------------------
+open          REACHED            121        0      1        0         0
+boulders      REACHED            128        0      9        8         0
+wall          REACHED            137        0     16       15         0
+popup         REACHED            129        0      3        2         0
+goal-blocked  REACHED            167        0      4        2         0
+random 1      REACHED            141        0     13       12         0
+random 2      REACHED            133        0     12       11         0
+random 3      REACHED            137        0     10        9         0
+```
+
+**Unknown Cells**
+
+I treat unknown cells as traversable. This allows the planner to find a route beyond the rover’s sensor range. Known obstacles are still blocked and inflated for clearance. If newly observed obstacles block the remaining path the planner then replans. The issue with unknown cells blocked is that A\* finds no route, the planner publishes an empty path, and the rover stays still. Without movement it cannot discover ground or obstacles to plan accordingly to the goal.
+
+With unknown cells blocked in open, the first update at 0.0 s produced 0 waypoints and 0.0 m of movement.
+
+**Rover Size**
+
+I inflate known obstacles by the supplied planning radius of 0.5m before checking or planning a path, adding a buffer around these obstacles. This lets A\* plan for the rover’s center while leaving clearance for its body. Without, it causes path planning to get too close to obstacles for the rovers body.
+
+I tested this in boulders. With inflation, the rover reached the goal in 25.6 simulated seconds with 0 blocked ticks. Without inflation, it stalled after 34.6 simulated seconds with 150 blocked ticks.
+
+**No Route**
+
+I publish an empty list when there is no path which tells the rover to stop. If I published nothing the rover can keep following the previous path and hit an obstacle.
+
+In goal-blocked, the planner published 0 waypoints at 20.8 s and recovered at 28.8 s with 0 blocked ticks.
+
+**Time**
+
+My monitoring output uses simulated time from msg.header.stamp. I use this clock because it controls rover movement and obstacle events.
+
+In popup, the status at 4.4 s reported 1 replan and 1.0 s since the last replan.
+
+**Ambiguity**
+
+The task didn’t specify exactly when to retry after finding no route. So I chose to retry only when the inflated occupancy grid changes from the last search. Until then, the rover is stationary. This avoids repeating A\* with the same inputs, while still allowing for recovery after the obstacle blocking the path clears.
+
+In goal-blocked, the rover waited 8 simulated seconds, from 20.8 s to 28.8 s, before recovering.
+
+**Testing**
+
+I ran goal-blocked to check how the planner handles an obstacle covering the goal. My attempted fix skipped planning whenever the goal was occupied. However, the rover kept following its previous path toward the obstacle, causing 23 emergency-stop ticks. I corrected this by allowing the planner to detect the invalid path and publish an empty path to stop the rover. It then waits for the grid to change before searching again. The corrected run reached the goal with 0 blocked ticks and 0 needless replans.
+
+**Stretch goals**
+
+I didn't have time for this :(
 
 ---
 
